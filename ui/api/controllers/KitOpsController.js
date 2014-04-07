@@ -38,11 +38,12 @@ module.exports = {
     var name = req.param('name');
     var email = req.param('email');
     if((name !== undefined && name.length > 0) && validator.isEmail(email) === true){
+      name = validator.toString(name);
       register_module.do_register(name, email, function(err){
         console.log("Kit Registration Failed: "+err);
         res.json({ success: 'failed', message: 'Kit Registration Failed'}, 500);
       }, function(result){
-        console.log("Kit Registration: "+result.state+", (If Error)Stacktrace:"+result.stacktrace);
+        console.log("Kit Registration: "+result.state+", Stacktrace:"+result.stacktrace);
         res.json({ success: result.state, message: result.stacktrace }, 200);
       })
     }else{
