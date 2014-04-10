@@ -91,6 +91,10 @@ module.exports = {
                 })
               },
               auth: function(callback){callback(null, null);},
+              admin: function(callback){
+                callback(null, req.session.is_admin);
+                //callback(null, true);
+              },
               layout: function(callback){
                 if(req.isAjax){
                   callback(null, null);
@@ -98,6 +102,9 @@ module.exports = {
                   callback(null, 'layout')
                 }
               },
+              email: function(callback){
+                callback(null, req.session.email);
+              }
           }, function(errasync, results) {
               if (errasync) {
                 console.log('Error getting the tools and defect tracker: '+errasync.message)

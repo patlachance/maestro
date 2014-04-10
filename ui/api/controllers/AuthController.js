@@ -14,7 +14,9 @@
  *
  * @docs        :: http://sailsjs.org/#!documentation/controllers
  */
-
+  var openid = require('openid');
+  var blueprint_utils = require('blueprint/blueprint');
+  var kit_ops = require('kit-ops/kit-ops');
 module.exports = {
     
   
@@ -32,6 +34,11 @@ module.exports = {
     res.view({ layout: 'login_layout' });
   },
   sign_in: function(req, res){
+    var message = req.param('message');
+    res.view({ layout: 'login_layout', message: message });
+  },
+  sign_out: function(req, res){
+    req.session.destroy();
     res.view({ layout: 'login_layout' });
   },
   login: function(req, res){
@@ -39,6 +46,168 @@ module.exports = {
   },
   first_admin: function(req, res){
     res.view({ layout: 'login_layout' });
+  },
+  auth: function(req, res){
+    kit_ops.get_opt('openid_url', function(open_err, identifier){
+      if(open_err){
+        res.view('500', { layout: null, errors: [ open_err.message ]});
+      }else{
+        var openid_url = identifier.option_value;
+        if(openid_url === undefined){
+          res.view('500', { layout: null, errors: [ 'We could not retrieve the openid provider' ]});
+        }else{
+          getRelyingParty(function(err, relyingParty){
+            if(err){
+              res.view('500', { layout: null, errors: [ err.message ]});
+            }else{
+              relyingParty.authenticate(openid_url, false, function(error, authUrl)
+              {
+                if (error)
+                {
+                  res.writeHead(200);
+                  res.end('Authentication failed: ' + error.message);
+                }
+                else if (!authUrl)
+                {
+                  res.writeHead(200);
+                  res.end('Authentication failed');
+                }
+                else
+                {
+                  res.writeHead(302, { Location: authUrl });
+                  res.end();
+                }
+              });
+            }
+          });
+        }
+      }
+    });
+  },
+  verify: function(req, res){
+    getRelyingParty(function(err, relyingParty){
+      if(err){
+		console.error('Failed to autenticate:'+err.message);
+        res.view('500', { layout: null, errors: [ 'Failed to autenticate:'+err.message ]});
+      }else{
+        relyingParty.verifyAssertion(req, function(error, result)
+        {
+          if(error){
+            console.error(error.message);
+            res.view({ layout: null, errors: [ error.message ]}, '500');
+          }else{
+            req.session.authenticated = result.authenticated;
+            req.session.email = result.email;
+            if(req.session.authenticated === true){
+              kit_ops.kit_has_admin(function(err_ka, result_ka){
+                if(err_ka){
+                  //Supress the error and send the user to index?
+                  console.error('Unable to check if the kit had an admin already: '+err_ka.message);
+                  res.redirect('/', 301);
+                }else{
+                  if(result_ka){
+                    //Yes
+                    kit_ops.is_admin(req.session.email, function(err_ia, result_ia){
+                      if(err_ia){
+                        //Supress the error and send the user to index?
+                        console.error('Unable to check is an admin: '+err_ia.message);
+                        res.redirect('/', 301);
+                      }else{
+                        //True or false
+                        req.session.is_admin = result_ia;
+                        res.redirect('/', 301);
+                      }
+                    });
+                  }else{
+                  //No
+                    kit_ops.create_kit_admin(req.session.email, function(err_ca, result_ca){
+                      if(err_ca){
+                        //Supress the error and send the user to index?
+                        console.error('Unable to create the kit admin: '+err_ca.message);
+                        res.redirect('/', 301);
+                      }else{
+                        //True or false
+                        req.session.is_admin = result_ca;
+                        res.redirect('/', 301);
+                      }
+                    });
+                  }
+                }
+              });
+            }else{
+              console.error('Unable to authenticate the user');
+              res.redirect('/', 301);
+            }
+          }
+        });
+      }
+    });
   }
   
 };
+function getRelyingParty(callback){
+    var extensions = [new openid.UserInterface(),
+                  new openid.SimpleRegistration(
+                      {
+                        "nickname" : true,
+                        "email" : true,
+                        "fullname" : true,
+                        "dob" : true,
+                        "gender" : true,
+                        "postcode" : true,
+                        "country" : true,
+                        "language" : true,
+                        "timezone" : true
+                      }),
+                  new openid.AttributeExchange(
+                      {
+                        "http://axschema.org/contact/email": "required",
+                        "http://axschema.org/namePerson/friendly": "required",
+                        "http://axschema.org/namePerson": "required"
+                      }),
+                  new openid.PAPE(
+                      {
+                        "max_auth_age": 24 * 60 * 60, // one day
+                        "preferred_auth_policies" : "none" //no auth method preferred.
+                      })];
+    blueprint_utils.get_blueprint_id(function(err){
+      callback('Unable to get the instance id'+err.message, null);
+    }, function(result){
+      var id;
+      try{
+        id = JSON.parse(result).id;
+      }catch(e){
+        id = new Error(e.message);
+      }
+      if(id instanceof Error){
+        console.log('Failed to parse the get_blueprint_id result into the instance id');
+        callback(id.message, null);
+      }else{
+        blueprint_utils.get_blueprint_section(id, 'maestro_url', function(err_url){
+          //Suppress the error and log the exception
+          console.log('Unable to retrieve maestro_url:'+err_url.message);
+          callback('Unable to retrieve maestro_url:'+err_url.message, null);
+        }, function(maestro_url){
+          
+          try{
+            maestro_url = JSON.parse(maestro_url);
+          }catch(e){
+            maestro_url = new Error(e.message);
+          }
+          
+          if(maestro_url instanceof Error){
+            console.log('Failed to parse the get_blueprint_section result into the maestro_url');
+            callback(maestro_url.message, null);
+          }else{
+            var relyingParty = new openid.RelyingParty(
+              maestro_url+'/auth/verify', // Verification URL (yours)
+              null, // Realm (optional, specifies realm for OpenID authentication)
+              false, // Use stateless verification
+              false, // Strict mode
+              extensions); // List of extensions to enable and include
+            callback(null, relyingParty);
+          }
+        })
+      }
+    });
+}
