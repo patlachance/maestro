@@ -1,5 +1,5 @@
 /**
- * CommandController
+ * ProjectController
  *
  * @module      :: Controller
  * @description	:: A set of functions called `actions`.
@@ -15,23 +15,42 @@
  * @docs        :: http://sailsjs.org/#!documentation/controllers
  */
 
+/**
+ *
+ * @type {{create: create, _config: {}}}
+ */
 module.exports = {
     
+  
   /**
    * Action blueprints:
-   *    `/command/exec`
+   *    `/project/create`
    */
-   exec: function (req, res) {
-    
-    // Send a JSON response
-    return res.json({
-      hello: 'world'
-    });
+   create: function (req, res) {
+
+   // hack!! salt.controllers.<controller-name>.function()
+   // calls another controller's action....
+   // example below: works, not sure this cool...
+   // sails.controllers.command.exec(req, res);
+
+   // using a service from api/service
+   /** example:
+   CommandSvc.CommandExec('/bin/ls', '/home/miqui',{status_only: true}, function(data) {
+          return res.json({exec: data})
+   })
+   */
+
   },
+
+
+
+
 
   /**
    * Overrides for the settings in `config/controllers.js`
-   * (specific to CommandController)
+   * (specific to ProjectController)
    */
   _config: {}
+
+  
 };
