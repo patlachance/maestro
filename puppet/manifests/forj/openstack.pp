@@ -1,11 +1,11 @@
 # (c) Copyright 2014 Hewlett-Packard Development Company, L.P.
-# 
+#
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
 #    You may obtain a copy of the License at
-# 
+#
 #        http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 #    Unless required by applicable law or agreed to in writing, software
 #    distributed under the License is distributed on an "AS IS" BASIS,
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,20 +25,17 @@ node /^review.*/ inherits default {
 # we need a utilities server until we fix puppet master bug that prevents server restart, so we can consolidate
 node /^util.*/ inherits default {
 
+  #TODO: we need to fix the iptables class because currently the class is only executed once, and it will never overwrite again the rules even if they changed.
   $zuul_url = read_json('zuul','tool_url',$::json_config_location,false)
   if $zuul_url != '' and $zuul_url != '#'
   {
     $statsd_hosts = [$zuul_url]
     $rules = regsubst ($statsd_hosts, '^(.*)$', '-m udp -p udp -s \1 --dport 8125 -j ACCEPT')
-  }
-  else
-  {
-    $rules = ''
-  }
-  ::sysadmin_config::setup { 'setup util node ports':
+    ::sysadmin_config::setup { 'setup util node ports':
     iptables_public_tcp_ports => [22, 80, 443, 8080, 8081, 8125, 2003, 8080],
     iptables_rules4           => $rules,
     sysadmins                 => $sysadmins,
+    }
   }
 }
 

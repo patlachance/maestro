@@ -1,0 +1,25 @@
+<% if(req.session.is_admin){ %>
+<div class="row">
+  <div class="row" style="margin-left: 15px;margin-top: 10px;background-color: #1D4E6F;display: inline-block;color: #FFFFFF;">
+    <h5 style="padding-left: 10px;font-family: 'Open Sans Semibold', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif !important;">Requirements for project creation:</h5>
+    <ul style="font-family: 'Open Sans Light', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif !important;font-size: 13px;padding-right: 10px;">
+      <li>Gerrit has to be <b style="color: #47CC3A">Online</b></li>
+      <li>You need at least <b>1 registered administrator</b> - the first user who logs in to Gerrit becomes an administrator</li>
+    </ul>
+  </div>
+  <ul id="og-grid" class="og-grid">
+    <li>
+      <a class="tool-view" href="#" data-largesrc="/images/new_project.png" data-tool-dname="Create Project" data-tool="create project" style="background-color: #FFFFFF !important;">
+        <img src="/images/new_project.png"/>
+      </a>
+      <span class="tool-desc-name" href="#" style="float: left;margin-top: -25px;margin-left: 10px;color: white;position: relative; width: auto !important; z-index: 100;">Create Project</span>
+    </li>
+  </ul>
+</div>
+<script src="../js/grid_projects.js"></script>
+<script>
+  $(document).ready(function(){
+    Grid.init();
+  });
+</script>
+<% } %>
