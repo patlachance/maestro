@@ -19,33 +19,23 @@
  *
  * @type {{create: create, _config: {}}}
  */
+ var maestro_exec = require('maestro-exec/maestro-exec');
 module.exports = {
-    
-  
   /**
    * Action blueprints:
    *    `/project/create`
    */
-   create: function (req, res) {
-
-   // hack!! salt.controllers.<controller-name>.function()
-   // calls another controller's action....
-   // example below: works, not sure this cool...
-   // sails.controllers.command.exec(req, res);
-
-   // using a service from api/service
-   /** example:
-   CommandSvc.CommandExec('/bin/ls', '/home/miqui',{status_only: true}, function(data) {
-          return res.json({exec: data})
-   })
-   */
-
+  create: function (req, res) {
+    maestro_exec.execCmd('sudo /config/newproject.sh', req.body.project_name, { status_only: true }, function(data){
+     res.json(data);
+    });
   },
-
-
-
-
-
+  index: function(req, res){
+    res.view({ layout: null });
+  },
+  new: function(req, res){
+    res.view({ layout: null });
+  },
   /**
    * Overrides for the settings in `config/controllers.js`
    * (specific to ProjectController)
