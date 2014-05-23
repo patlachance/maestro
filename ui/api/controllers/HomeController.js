@@ -1,4 +1,19 @@
 /**
+    (c) Copyright 2014 Hewlett-Packard Development Company, L.P.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+/**
  * HomeController
  *
  * @module      :: Controller
@@ -28,21 +43,22 @@ module.exports = {
   _config: {},
   index: function(req, res){
     blueprint_utils.get_blueprint_id(function(err){
-        console.log('Unable to get the instance_id of the kit: '+err.message);
+        console.error('Unable to get the instance_id of the kit: '+err.message);
         res.view('500', { layout: null, errors: [ 'Unable to get the instance_id of the kit: '+err.message ]});
       }, function(result){
         if(result === undefined){
           res.view('500', { layout: null, errors: [ 'Unable to get the instance_id of the kit: '+err.message ]});
         }else{
-          
           try{
             result = JSON.parse(result);
           }catch(e){
             result = new Error('Unable to parse malformed JSON');
+            console.error('Unable to parse malformed JSON: '+e.message)
           }
           
           if(result instanceof Error){
             res.view('500', { layout: null, errors: [ 'Unable to get the instance_id of the kit: '+result.message ]});
+            console.error('Unable to get the instance_id of the kit (result instanceoff Error): '+result.message)
           }else{
             var tools = [];
             async.series({
@@ -83,14 +99,14 @@ module.exports = {
   tutorial: function(req, res){
   	blueprint_utils.get_blueprint_id(
   	  function(err){
-          console.log('Unable to get the instance_id of the kit: '+err.message);
+          console.error('Unable to get the instance_id of the kit: '+err.message);
           res.view({ layout: null, gerrit_ip: 'my_gerrit_ip', zuul_ip: 'my_zuul_ip' });
         },
   	  function(result){
   	    result = JSON.parse(result);
   		blueprint_utils.get_blueprint_section(result.id, 'tools',
   		  function(err){
-              console.log('Unable to retrieve the list of tools:'+err.message);
+              console.error('Unable to retrieve the list of tools:'+err.message);
   			res.view({ layout: null, gerrit_ip: 'my_gerrit_ip', zuul_ip: 'my_zuul_ip' });
             },
   		  function(result){

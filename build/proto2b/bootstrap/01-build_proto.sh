@@ -1,3 +1,4 @@
+
 _PUPPET_MASTER="$(GetJson $PREFIX/meta.js erosite)"
 _PUPPET_MASTER_FQDN="${_PUPPET_MASTER}.$(GetJson $PREFIX/meta.js erodomain)"
 
